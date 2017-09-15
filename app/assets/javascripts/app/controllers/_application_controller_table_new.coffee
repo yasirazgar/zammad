@@ -215,14 +215,17 @@ class App.ControllerTable extends App.Controller
       if newRows.length isnt @currentRows.length
         result = "fullRender.lenghtChanged|#{@currentRows.length}/#{newRows.length}"
         @renderTableFull(newRows)
+        console.log('result', result)
         return result
 
       # compare rows
       for position in [0..newRows.length-1]
         if newRows[position] isnt @currentRows[position]
           @renderTableFull(newRows)
+          console.log('result', "fullRender.contentChanged|row(#{position})")
           return "fullRender.contentChanged|row(#{position})"
 
+    console.log('result', 'noChanges')
     return 'noChanges'
 
 

@@ -540,20 +540,23 @@ class App.TicketOverview extends App.Controller
   render: ->
     elLocal = $(App.view('ticket_overview/index')())
 
-    @navBarControllerVertical = new Navbar
+    @navBarControllerVertical = new Navbar(
       el:       elLocal.find('.overview-header')
       view:     @view
       vertical: true
+    )
 
-    @navBarController = new Navbar
+    @navBarController = new Navbar(
       el:   elLocal.filter('.sidebar')
       view: @view
+    )
 
-    @contentController = new Table
+    @contentController = new Table(
       el:          elLocal.find('.overview-table')
       view:        @view
       keyboardOn:  @keyboardOn
       keyboardOff: @keyboardOff
+    )
 
     @renderBatchOverlay(elLocal.filter('.js-batch-overlay'))
 
@@ -662,10 +665,12 @@ class App.TicketOverview extends App.Controller
     @viewLast = @view
 
     # build content
-    if @contentController
-      @contentController.update(
-        view: @view
-      )
+    @contentController = new Table(
+      el:          @$('.overview-table')
+      view:        @view
+      keyboardOn:  @keyboardOn
+      keyboardOff: @keyboardOff
+    )
 
   hide: =>
     @keyboardOff()
@@ -908,7 +913,7 @@ class Table extends App.Controller
     super
 
     if @view
-      @bindId = App.OverviewListCollection.bind(@view, @render)
+      @bindId = App.OverviewListCollection.bind(@view, @updateTable)
 
     # rerender view, e. g. on langauge change
     @bind 'ui:rerender', =>
@@ -932,7 +937,25 @@ class Table extends App.Controller
     if @view
       if @bindId
         App.OverviewListCollection.unbind(@bindId)
-      @bindId = App.OverviewListCollection.bind(@view, @render)
+      @bindId = App.OverviewListCollection.bind(@view, @updateTable)
+
+  updateTable: (data) =>
+    if !@table
+      @render(data)
+      return
+
+    # use cache
+    overview = data.overview
+    tickets  = data.tickets
+
+    return if !overview && !tickets
+
+    # get ticket list
+    ticketListShow = []
+    for ticket in tickets
+      ticketListShow.push App.Ticket.find(ticket.id)
+
+    @table.update(objects: ticketListShow)
 
   render: (data) =>
     return if !data
@@ -1086,7 +1109,7 @@ class Table extends App.Controller
         attribute.title  = object.iconTitle()
         value
 
-      new App.ControllerTable(
+      @table = new App.ControllerTable(
         tableId:        "ticket_overview_#{@overview.id}"
         overview:       @overview.view.s
         el:             @$('.table-overview')
