@@ -929,9 +929,6 @@ class Table extends App.Controller
     for key, value of params
       @[key] = value
 
-    @view_mode = App.LocalStorage.get("mode:#{@view}", @Session.get('id')) || 's'
-    @log 'notice', 'view:', @view, @view_mode
-
     return if !@view
 
     if @view
@@ -954,8 +951,16 @@ class Table extends App.Controller
     ticketListShow = []
     for ticket in tickets
       ticketListShow.push App.Ticket.find(ticket.id)
-
-    @table.update(objects: ticketListShow)
+    console.log('overview', overview)
+    @overview = App.Overview.find(overview.id)
+    console.log('TTT', @overview.view.s)
+    @table.update(
+      overviewAttributes: @overview.view.s
+      objects:            ticketListShow
+      groupBy:            @overview.group_by
+      orderBy:            @overview.order.by
+      orderDirection:     @overview.order.direction
+    )
 
   render: (data) =>
     return if !data
@@ -965,6 +970,9 @@ class Table extends App.Controller
     tickets  = data.tickets
 
     return if !overview && !tickets
+
+    @view_mode = App.LocalStorage.get("mode:#{@view}", @Session.get('id')) || 's'
+    console.log 'notice', 'view:', @view, @view_mode
 
     # get ticket list
     ticketListShow = []
@@ -1520,6 +1528,7 @@ class App.OverviewSettings extends App.ControllerModal
           App.OverviewListCollection.fetch(@overview.link)
         else
           App.OverviewIndexCollection.trigger()
+          console.log('TRIGGER', @overview.link)
           App.OverviewListCollection.trigger(@overview.link)
 
         # close modal
