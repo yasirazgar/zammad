@@ -36,5 +36,5 @@
     <% end %>
     </tr>
   </thead>
-  <tbody><%- @tableBody %></tbody>
+  <tbody class="js-tableBody"><%- @tableBody %></tbody>
 </table>

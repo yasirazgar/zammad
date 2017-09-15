@@ -1,4 +1,4 @@
-class App.ControllerTable extends App.Controller
+class App.ControllerTable2 extends App.Controller
   minColWidth: 40
   baseColWidth: 130
   minTableWidth: 612
