@@ -125,6 +125,7 @@ class App.ControllerTable extends App.Controller
 
   lastOrderDirection: undefined
   lastOrderBy: undefined
+  lastOverview: undefined
 
   bindCol: {}
   bindRow: {}
@@ -137,7 +138,7 @@ class App.ControllerTable extends App.Controller
     @overviewAttributes ||= @overview || @model.configure_overview || []
     @attributesListRaw ||= @attribute_list || @model.configure_attributes || {}
     @attributesList = App.Model.attributesGet(false, @attributesListRaw)
-
+    console.log('Table', @overviewAttributes, @overview)
     #@setHeaderWidths = App.Model.setHeaderWidthsGet(false, @attributesList)
     @destroy    = @model.configure_delete
 
@@ -178,6 +179,8 @@ class App.ControllerTable extends App.Controller
     for key, value of params
       @[key] = value
 
+    @tableHeaders()
+
     if params.objects || @orderDirection isnt @lastOrderDirection || @orderBy isnt @lastOrderBy
       @sortList()
 
@@ -213,7 +216,7 @@ class App.ControllerTable extends App.Controller
       # check for changes
       newRows = @renderTableRows()
       if newRows.length isnt @currentRows.length
-        result = "fullRender.lenghtChanged|#{@currentRows.length}/#{newRows.length}"
+        result = ['fullRender.lenghtChanged', @currentRows.length, newRows.length]
         @renderTableFull(newRows)
         console.log('result', result)
         return result
@@ -223,7 +226,7 @@ class App.ControllerTable extends App.Controller
         if newRows[position] isnt @currentRows[position]
           @renderTableFull(newRows)
           console.log('result', "fullRender.contentChanged|row(#{position})")
-          return "fullRender.contentChanged|row(#{position})"
+          return ['fullRender.contentChanged', position]
 
     console.log('result', 'noChanges')
     return 'noChanges'
@@ -413,7 +416,10 @@ class App.ControllerTable extends App.Controller
     )
 
   tableHeaders: =>
-    return @headers if @headers isnt undefined
+    if @headers && @overviewAttributes is @lastOverview
+      console.log('tableHeaders: same overviewAttributes just return headers', @headers)
+      return ['headers are the same', @headers]
+    @lastOverview = @overviewAttributes
 
     # get header data
     @headers = []
@@ -492,8 +498,8 @@ class App.ControllerTable extends App.Controller
     @columnsLength = @headers.length
     if @checkbox || @radio
       @columnsLength++
-
-    @headers
+    console.log('tableHeaders: new headers', @headers)
+    ['new headers', @headers]
 
   sortList: =>
     return if _.isEmpty(@objects)
