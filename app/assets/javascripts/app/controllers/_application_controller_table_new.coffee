@@ -159,7 +159,7 @@ class App.ControllerTable extends App.Controller
 
     @availableWidth = @el.width()
 
-    @render()
+    @renderQueue()
 
   release: =>
     $(window).off 'resize.table', @onResize
@@ -184,7 +184,11 @@ class App.ControllerTable extends App.Controller
     if params.objects || @orderDirection isnt @lastOrderDirection || @orderBy isnt @lastOrderBy
       @sortList()
 
-    @render()
+    @renderQueue()
+
+  renderQueue: =>
+    App.QueueManager.add('tableRender', @render)
+    App.QueueManager.run('tableRender')
 
   render: =>
     if @renderState is undefined
@@ -194,27 +198,48 @@ class App.ControllerTable extends App.Controller
         @renderState = 'emptyList'
         @el.html(@renderEmptyList())
         $(window).on 'resize.table', @onResize
-        return 'emptyList.new'
+        return ['emptyList.new']
       else
         @renderState = 'List'
         @tableHeaders()
         @sortList()
         @renderTableFull()
         $(window).on 'resize.table', @onResize
-        return 'fullRender.new'
+        return ['fullRender.new']
     else if @renderState is 'emptyList' && !_.isEmpty(@objects)
       @renderState = 'List'
       @tableHeaders()
       @renderTableFull()
-      return 'fullRender'
+      return ['fullRender']
     else if @renderState isnt 'emptyList' && _.isEmpty(@objects)
       @renderState = 'emptyList'
       @el.html(@renderEmptyList())
-      return 'emptyList'
+      return ['emptyList']
     else
 
       # check for changes
       newRows = @renderTableRows()
+      removedRows = _.difference(@currentRows, newRows)
+      addedRows = _.difference(newRows, @currentRows)
+
+      # if only rows are removed
+      if _.isEmpty(addedRows) && !_.isEmpty(removedRows) && removedRows.length < 15 && !_.isEmpty(newRows)
+        newCurrentRows = []
+        removePositions = []
+        for position in [0..@currentRows.length-1]
+          if _.contains(removedRows, @currentRows[position])
+            removePositions.push position
+          else
+            newCurrentRows.push @currentRows[position]
+
+        # check if order is still correct
+        if @_isSame(newRows, newCurrentRows) is true
+          for position in removePositions
+            @$("tbody > tr:nth-child(#{position+1})").remove()
+          @currentRows = newCurrentRows
+          console.log('fullRender.contentRemoved', removePositions)
+          return ['fullRender.contentRemoved', removePositions]
+
       if newRows.length isnt @currentRows.length
         result = ['fullRender.lenghtChanged', @currentRows.length, newRows.length]
         @renderTableFull(newRows)
@@ -222,15 +247,14 @@ class App.ControllerTable extends App.Controller
         return result
 
       # compare rows
-      for position in [0..newRows.length-1]
-        if newRows[position] isnt @currentRows[position]
-          @renderTableFull(newRows)
-          console.log('result', "fullRender.contentChanged|row(#{position})")
-          return ['fullRender.contentChanged', position]
+      result = @_isSame(newRows, @currentRows)
+      if result isnt true
+        @renderTableFull(newRows)
+        console.log('result', "fullRender.contentChanged|row(#{result})")
+        return ['fullRender.contentChanged', result]
 
     console.log('result', 'noChanges')
-    return 'noChanges'
-
+    return ['noChanges']
 
   renderEmptyList: =>
     App.view('generic/admin/empty')(
@@ -712,7 +736,7 @@ class App.ControllerTable extends App.Controller
     # update store
     @preferencesStore('order', 'orderBy', @orderBy)
     @preferencesStore('order', 'orderDirection', @orderDirection)
-    @render()
+    @renderQueue()
 
   preferencesStore: (type, key, value) ->
     data = @preferencesGet()
@@ -731,3 +755,9 @@ class App.ControllerTable extends App.Controller
 
   preferencesStoreKey: =>
     "tablePrefs:#{@tableId}"
+
+  _isSame: (array1, array2) ->
+    for position in [0..array1.length-1]
+      if array1[position] isnt array2[position]
+        return position
+    true
