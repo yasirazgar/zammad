@@ -45,7 +45,7 @@ test('table new - initial list', function() {
   equal(el.find('tbody > tr:nth-child(2) > td:nth-child(2)').text().trim(), '10.06.2014', 'check row 2')
   equal(el.find('tbody > tr:nth-child(3) > td').length, 0, 'check row 3')
 
-  result = table.update({objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
+  result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
   equal(result[0], 'noChanges')
 
   equal(el.find('table > thead > tr').length, 1, 'row count')
@@ -70,7 +70,7 @@ test('table new - initial list', function() {
     },
   ], {clear: true})
 
-  result = table.update({objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
+  result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
   equal(result[0], 'fullRender.lenghtChanged')
   equal(result[1], 2)
   equal(result[2], 1)
@@ -87,7 +87,7 @@ test('table new - initial list', function() {
 
   App.TicketPriority.refresh([], {clear: true})
 
-  result = table.update({objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
+  result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
   equal(result[0], 'emptyList')
 
   equal(el.find('table > thead > tr').length, 1, 'row count')
@@ -111,7 +111,7 @@ test('table new - initial list', function() {
     },
   ], {clear: true})
 
-  result = table.update({objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
+  result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
   equal(result[0], 'fullRender')
 
   equal(el.find('table > thead > tr').length, 1, 'row count')
@@ -151,7 +151,7 @@ test('table new - initial list', function() {
     },
   ], {clear: true})
 
-  result = table.update({objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
+  result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
   equal(result[0], 'fullRender.lenghtChanged')
   equal(result[1], 2)
   equal(result[2], 3)
@@ -172,7 +172,7 @@ test('table new - initial list', function() {
   equal(el.find('tbody > tr:nth-child(3) > td:nth-child(2)').text().trim(), '10.06.2014', 'check row 3')
   equal(el.find('tbody > tr:nth-child(4) > td').length, 0, 'check row 4')
 
-  result = table.update({orderDirection: 'DESC', orderBy: 'name'})
+  result = table.update({sync: true, orderDirection: 'DESC', orderBy: 'name'})
   equal(result[0], 'fullRender.contentChanged')
   equal(result[1], 0)
 
@@ -192,7 +192,7 @@ test('table new - initial list', function() {
   equal(el.find('tbody > tr:nth-child(3) > td:nth-child(3)').text().trim(), 'true', 'check row 3')
   equal(el.find('tbody > tr:nth-child(4) > td').length, 0, 'check row 4')
 
-  result = table.update({orderDirection: 'ASC', orderBy: 'name'})
+  result = table.update({sync: true, orderDirection: 'ASC', orderBy: 'name'})
   equal(result[0], 'fullRender.contentChanged')
   equal(result[1], 0)
 
@@ -229,7 +229,7 @@ test('table new - initial list', function() {
     },
   ], {clear: true})
 
-  result = table.update({objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
+  result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
   equal(result[0], 'fullRender.contentRemoved')
   equal(result[1], 1)
   notOk(result[2])
@@ -249,7 +249,7 @@ test('table new - initial list', function() {
 
   App.TicketPriority.refresh([], {clear: true})
 
-  result = table.update({objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
+  result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
   equal(result[0], 'emptyList')
 
   equal(el.find('table > thead > tr').length, 1, 'row count')

@@ -184,6 +184,8 @@ class App.ControllerTable extends App.Controller
     if params.objects || @orderDirection isnt @lastOrderDirection || @orderBy isnt @lastOrderBy
       @sortList()
 
+    if params.sync is true
+      return @render()
     @renderQueue()
 
   renderQueue: =>
