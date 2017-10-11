@@ -984,8 +984,6 @@ class Table extends App.Controller
       @html App.view('customer_not_ticket_exists')()
       return
 
-    @selected = @getSelected()
-
     # set page title
     @overview = App.Overview.find(overview.id)
 
@@ -1154,8 +1152,6 @@ class Table extends App.Controller
             'click': callbackCheckbox
       )
 
-    @setSelected(@selected)
-
     # start user popups
     @userPopups()
 
@@ -1195,22 +1191,6 @@ class Table extends App.Controller
         else
           bulkAll.prop('checked', false)
           bulkAll.prop('indeterminate', true)
-    )
-
-  getSelected: ->
-    @ticketIDs = []
-    @$('.table-overview').find('[name="bulk"]:checked').each( (index, element) =>
-      ticketId = $(element).val()
-      @ticketIDs.push ticketId
-    )
-    @ticketIDs
-
-  setSelected: (ticketIDs) ->
-    @$('.table-overview').find('[name="bulk"]').each( (index, element) ->
-      ticketId = $(element).val()
-      for ticketIdSelected in ticketIDs
-        if ticketIdSelected is ticketId
-          $(element).prop('checked', true)
     )
 
   viewmode: (e) =>

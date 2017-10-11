@@ -247,6 +247,21 @@ test('table new - initial list', function() {
   equal(el.find('tbody > tr:nth-child(2) > td:nth-child(2)').text().trim(), '10.06.2014', 'check row 3')
   equal(el.find('tbody > tr:nth-child(3) > td').length, 0, 'check row 3')
 
+  result = table.update({sync: true, overviewAttributes: ['name', 'created_at']})
+  equal(result[0], 'fullRender.overviewAttributesChanged')
+
+  equal(el.find('table > thead > tr').length, 1, 'row count')
+  equal(el.find('table > thead > tr > th:nth-child(1)').text().trim(), 'Name', 'check header')
+  equal(el.find('table > thead > tr > th:nth-child(2)').text().trim(), 'Erstellt', 'check header')
+  equal(el.find('table > thead > tr > th').length, 2, 'check header')
+  equal(el.find('tbody > tr:nth-child(1) > td').length, 2, 'check row 1')
+  equal(el.find('tbody > tr:nth-child(1) > td:first').text().trim(), '1 niedrig', 'check row 1')
+  equal(el.find('tbody > tr:nth-child(1) > td:nth-child(2)').text().trim(), '10.06.2014', 'check row 1')
+  equal(el.find('tbody > tr:nth-child(2) > td').length, 2, 'check row 2')
+  equal(el.find('tbody > tr:nth-child(2) > td:first').text().trim(), '3 hoch', 'check row 3')
+  equal(el.find('tbody > tr:nth-child(2) > td:nth-child(2)').text().trim(), '10.06.2014', 'check row 3')
+  equal(el.find('tbody > tr:nth-child(3) > td').length, 0, 'check row 3')
+
   App.TicketPriority.refresh([], {clear: true})
 
   result = table.update({sync: true, objects: App.TicketPriority.search({sortBy:'name', order: 'ASC'})})
@@ -255,4 +270,5 @@ test('table new - initial list', function() {
   equal(el.find('table > thead > tr').length, 1, 'row count')
   equal(el.find('table > thead > tr > th:nth-child(1)').text().trim(), 'Keine Einträge', 'check header')
   equal(el.find('tbody > tr:nth-child(1) > td').length, 0, 'check row 1')
+
 })

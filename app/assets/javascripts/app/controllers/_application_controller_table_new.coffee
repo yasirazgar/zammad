@@ -102,7 +102,7 @@ class App.ControllerTable extends App.Controller
     '.js-tableHead': 'tableHead'
 
   events:
-    'click .js-tableHead': 'resort'
+    'click .js-sort': 'sortByColumn'
 
   overviewAttributes: undefined
   #model:             App.TicketPriority,
@@ -126,6 +126,9 @@ class App.ControllerTable extends App.Controller
   lastOrderDirection: undefined
   lastOrderBy: undefined
   lastOverview: undefined
+
+  customOrderDirection: undefined
+  customOrderBy: undefined
 
   bindCol: {}
   bindRow: {}
@@ -164,25 +167,10 @@ class App.ControllerTable extends App.Controller
   release: =>
     $(window).off 'resize.table', @onResize
 
-  resort: (e) =>
-    @orderBy = $(e.currentTarget).attr 'data-column-key'
-    if @orderBy is @lastOrderBy
-      if @orderDirection is 'ASC'
-        @orderDirection = 'DESC'
-      else
-        @orderDirection = 'ASC'
-    else
-      @orderDirection = 'ASC'
-    @sortList()
-
   update: (params) =>
+    console.log('params', params)
     for key, value of params
       @[key] = value
-
-    @tableHeaders()
-
-    if params.objects || @orderDirection isnt @lastOrderDirection || @orderBy isnt @lastOrderBy
-      @sortList()
 
     if params.sync is true
       return @render()
@@ -203,14 +191,11 @@ class App.ControllerTable extends App.Controller
         return ['emptyList.new']
       else
         @renderState = 'List'
-        @tableHeaders()
-        @sortList()
         @renderTableFull()
         $(window).on 'resize.table', @onResize
         return ['fullRender.new']
     else if @renderState is 'emptyList' && !_.isEmpty(@objects)
       @renderState = 'List'
-      @tableHeaders()
       @renderTableFull()
       return ['fullRender']
     else if @renderState isnt 'emptyList' && _.isEmpty(@objects)
@@ -219,8 +204,13 @@ class App.ControllerTable extends App.Controller
       return ['emptyList']
     else
 
+      # check if header has changed
+      if @tableHeadersHasChanged()
+        @renderTableFull()
+        return ['fullRender.overviewAttributesChanged']
+
       # check for changes
-      newRows = @renderTableRows()
+      newRows = @renderTableRows(true)
       removedRows = _.difference(@currentRows, newRows)
       addedRows = _.difference(newRows, @currentRows)
 
@@ -264,10 +254,16 @@ class App.ControllerTable extends App.Controller
     )
 
   renderTableFull: (rows) =>
+    console.log('renderTableFull', @orderBy, @orderDirection)
+    @tableHeaders()
+    @sortList()
+    bulkIds = @getBulkSelected()
     container = @renderTableContainer()
     if !rows
       rows = @renderTableRows()
-    @currentRows = rows
+      @currentRows = clone(rows)
+    else
+      @currentRows = clone(rows)
     container.find('.js-tableBody').html(rows)
 
     cursorMap =
@@ -289,7 +285,7 @@ class App.ControllerTable extends App.Controller
           for headerName in @headers
             if !hit
               position += 1
-            if headerName.name is name || headerName.name is "#{name}_id" || headerName.name is "#{name}_ids"
+            if headerName.name is name || headerName.name is "#{name}_id" || headerName.name is "#{name}_bulkIds"
               hit = true
 
           if hit
@@ -331,12 +327,10 @@ class App.ControllerTable extends App.Controller
 
     # if we have a personalised table
     if @tableId
+
       # enable resize column
       container.on 'mousedown', '.js-col-resize', @onColResizeMousedown
       container.on 'click', '.js-col-resize', @stopPropagation
-
-      # enable sort column
-      container.on 'click', '.js-sort', @sortByColumn
 
     # enable checkbox bulk selection
     if @checkbox
@@ -393,7 +387,7 @@ class App.ControllerTable extends App.Controller
       container.find('tbody').sortable(dndOptions)
 
     @el.html(container)
-
+    @setBulkSelected(bulkIds)
 
   renderTableContainer: =>
     $(App.view('generic/table')(
@@ -405,7 +399,9 @@ class App.ControllerTable extends App.Controller
       sortable:   @dndCallback
     ))
 
-  renderTableRows: (container) =>
+  renderTableRows: (sort = false) =>
+    if sort is true
+      @sortList()
     position = 0
     columnsLength = @headers.length
     if @checkbox || @radio
@@ -441,8 +437,16 @@ class App.ControllerTable extends App.Controller
       object:     object
     )
 
+  tableHeadersHasChanged: =>
+    return true if @overviewAttributes isnt @lastOverview
+    false
+
   tableHeaders: =>
-    if @headers && @overviewAttributes is @lastOverview
+    orderBy = @customOrderBy || @orderBy
+    orderDirection = @customOrderDirection || @orderDirection
+
+    #console.log('LLL', @lastOrderBy, @orderBy, @lastOrderDirection, @orderDirection, @overviewAttributes, @lastOverview)
+    if @headers && @lastOrderBy is orderBy && @lastOrderDirection is orderDirection && !@tableHeadersHasChanged()
       console.log('tableHeaders: same overviewAttributes just return headers', @headers)
       return ['headers are the same', @headers]
     @lastOverview = @overviewAttributes
@@ -529,14 +533,23 @@ class App.ControllerTable extends App.Controller
 
   sortList: =>
     return if _.isEmpty(@objects)
-    return if _.isEmpty(@orderBy) && _.isEmpty(@groupBy)
 
-    @lastOrderDirection = @orderDirection
-    @lastOrderBy = @orderBy
 
-    if @orderBy
+    orderBy = @customOrderBy || @orderBy
+    orderDirection = @customOrderDirection || @orderDirection
+
+    console.log('order', @orderBy, @orderDirection)
+    console.log('customOrder', @customOrderBy, @customOrderDirection)
+
+    return if _.isEmpty(orderBy) && _.isEmpty(@groupBy)
+
+    return if @lastSortedobjects is @objects && @lastOrderDirection is orderDirection && @lastOrderBy is orderBy
+    @lastOrderDirection = orderDirection
+    @lastOrderBy = orderBy
+
+    if orderBy
       for header in @headers
-        if header.name is @orderBy
+        if header.name is orderBy || "#{header.name}_id" is orderBy# || header.name.substring(0, header.name.length - 3) is orderBy
           localObjects = _.sortBy(
             @objects
             (item) ->
@@ -548,13 +561,16 @@ class App.ControllerTable extends App.Controller
               if header.relation
                 if item[header.name]
                   localItem = App[header.relation].findNative(item[header.name])
-                  if localItem && localItem.displayName
-                    localItem = localItem.displayName().toLowerCase()
-                  return localItem
+                  if localItem
+                    if localItem.displayName
+                      localItem = localItem.displayName().toLowerCase()
+                    if localItem.name
+                      localItem = localItem.name.toLowerCase()
+                    return localItem
                 return ''
               item[header.name]
           )
-          if @orderDirection is 'DESC'
+          if orderDirection is 'DESC'
             header.sortOrderIcon = ['arrow-down', 'table-sort-arrow']
             localObjects = localObjects.reverse()
           else
@@ -600,6 +616,7 @@ class App.ControllerTable extends App.Controller
         groupObjects[group] = [] # release old array
 
     @objects = localObjects
+    @lastSortedobjects = localObjects
 
     localObjects
 
@@ -715,30 +732,43 @@ class App.ControllerTable extends App.Controller
 
     # update store and runtime @headerWidth
     @preferencesStore('headerWidth', leftColumnKey, leftWidth)
+    @headerWidth[leftColumnKey] = leftWidth
     _.find(@headers, (column) -> column.name is leftColumnKey).displayWidth = leftWidth
 
     # update store and runtime @headerWidth
     if rightColumnKey
       @preferencesStore('headerWidth', rightColumnKey, rightWidth)
+      @headerWidth[rightColumnKey] = rightWidth
       _.find(@headers, (column) -> column.name is rightColumnKey).displayWidth = rightWidth
 
   sortByColumn: (event) =>
     column = $(event.currentTarget).closest('[data-column-key]').attr('data-column-key')
 
+    orderBy = @customOrderBy || @orderBy
+    orderDirection = @customOrderDirection || @orderDirection
+
     # sort, update runtime @orderBy and @orderDirection
-    if @orderBy isnt column
-      @orderBy = column
-      @orderDirection = 'ASC'
+    if orderBy isnt column
+      orderBy = column
+      orderDirection = 'ASC'
     else
-      if @orderDirection is 'ASC'
-        @orderDirection = 'DESC'
+      if orderDirection is 'ASC'
+        orderDirection = 'DESC'
       else
-        @orderDirection = 'ASC'
+        orderDirection = 'ASC'
+
+    @orderBy = orderBy
+    @orderDirection = orderDirection
+    @customOrderBy = orderBy
+    @customOrderDirection = orderDirection
 
     # update store
-    @preferencesStore('order', 'orderBy', @orderBy)
-    @preferencesStore('order', 'orderDirection', @orderDirection)
-    @renderQueue()
+    @preferencesStore('order', 'customOrderBy', @orderBy)
+    @preferencesStore('order', 'customOrderDirection', @orderDirection)
+    render = =>
+      @renderTableFull()
+    App.QueueManager.add('tableRender', render)
+    App.QueueManager.run('tableRender')
 
   preferencesStore: (type, key, value) ->
     data = @preferencesGet()
@@ -757,6 +787,22 @@ class App.ControllerTable extends App.Controller
 
   preferencesStoreKey: =>
     "tablePrefs:#{@tableId}"
+
+  getBulkSelected: =>
+    ids = []
+    @$('[name="bulk"]:checked').each( (index, element) ->
+      id = $(element).val()
+      ids.push id
+    )
+    ids
+
+  setBulkSelected: (ids) ->
+    @$('[name="bulk"]').each( (index, element) ->
+      id = $(element).val()
+      for idSelected in ids
+        if idSelected is id
+          $(element).prop('checked', true)
+    )
 
   _isSame: (array1, array2) ->
     for position in [0..array1.length-1]
