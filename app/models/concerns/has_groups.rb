@@ -298,16 +298,16 @@ module HasGroups
     #
     # @return [Array<Class>]
     def group_access(group_id, access)
-      group_id = ensure_group_id_parameter(group_id)
+      group_id = ensure_group_id_parameter_array(group_id)
       access   = ensure_group_access_list_parameter(access)
 
       # check direct access
-      instances = joins(group_through.name).where( group_through.table_name => { group_id: group_id, access: access }, active: true )
+      instances = joins(group_through.name).select("#{table_name}.*, #{group_through.table_name}.group_id as group_access_group_id").where( group_through.table_name => { group_id: group_id, access: access }, active: true )
       if group_through.class_name == 'UserGroup'
         permissions = Permission.with_parents('ticket.agent')
         instances = instances
                     .joins(roles: :permissions)
-                    .where('roles.active = ? AND permissions.name IN (?) AND permissions.active = ? AND users.id IN (?)', true, permissions, true, ids)
+                    .where('roles.active = ? AND permissions.name IN (?) AND permissions.active = ?', true, permissions, true)
       end
 
       # check indirect access through roles if possible
@@ -343,6 +343,15 @@ module HasGroups
     def ensure_group_id_parameter(group_or_id)
       return group_or_id if group_or_id.is_a?(Integer)
       group_or_id.id
+    end
+
+    def ensure_group_id_parameter_array(group_or_id)
+      if group_or_id.is_a?(Enumerable)
+         return group_or_id if group_or_id.any? {|h| h.is_a?(Integer) }
+         return group_or_id.pluck(:id)
+      end
+
+      return ensure_group_id_parameter(group_or_id)
     end
 
     def ensure_group_access_list_parameter(access)
