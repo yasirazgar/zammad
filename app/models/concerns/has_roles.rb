@@ -89,11 +89,11 @@ module HasRoles
 
     def ensure_group_id_parameter_array(group_or_id)
       if group_or_id.is_a?(Enumerable)
-         return group_or_id if group_or_id.any? {|h| h.is_a?(Integer) }
-         return group_or_id.pluck(:id)
+        return group_or_id if group_or_id.any? { |h| h.is_a?(Integer) }
+        return group_or_id.pluck(:id)
       end
 
-      return ensure_group_id_parameter(group_or_id)
+      ensure_group_id_parameter(group_or_id)
     end
 
     def ensure_group_access_list_parameter(access)

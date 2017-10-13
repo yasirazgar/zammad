@@ -452,11 +452,7 @@ returns
         list = Object.const_get('Permission').select('preferences').joins(:roles).where('roles.id IN (?) AND roles.active = ? AND permissions.name IN (?) AND permissions.active = ?', role_ids, true, permissions, true).pluck(:preferences)
       end
 
-      if list.present?
-        return true
-      else
-        return false
-      end
+      return list.present?
     end
     false
   end
