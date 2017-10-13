@@ -298,7 +298,7 @@ module HasGroups
     #
     # @return [Array<Class>]
     def group_access(group_id, access)
-      group_id = ensure_group_id_parameter_array(group_id)
+      group_id = ensure_group_id_parameter(group_id)
       access   = ensure_group_access_list_parameter(access)
 
       # check direct access
@@ -343,15 +343,6 @@ module HasGroups
     def ensure_group_id_parameter(group_or_id)
       return group_or_id if group_or_id.is_a?(Integer)
       group_or_id.id
-    end
-
-    def ensure_group_id_parameter_array(group_or_id)
-      if group_or_id.is_a?(Enumerable)
-        return group_or_id if group_or_id.any? { |h| h.is_a?(Integer) }
-        return group_or_id.pluck(:id)
-      end
-
-      ensure_group_id_parameter(group_or_id)
     end
 
     def ensure_group_access_list_parameter(access)

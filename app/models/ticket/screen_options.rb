@@ -95,14 +95,12 @@ returns
                Group.where(active: true)
              end
 
-    group_access_list = User.group_access(groups, 'full')
     groups.each do |group|
       filter[:group_id].push group.id
       assets = group.assets(assets)
       dependencies[:group_id][group.id] = { owner_id: [] }
 
-      group_access_list.each do |user|
-        next if user.group_access_group_id != group.id
+      User.group_access(group.id, 'full').each do |user|
         next if !agents[ user.id ]
         assets = user.assets(assets)
         dependencies[:group_id][ group.id ][ :owner_id ].push user.id
