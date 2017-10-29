@@ -1,5 +1,5 @@
 class App.Role extends App.Model
-  @configure 'Role', 'name', 'permission_ids', 'group_ids', 'default_at_signup', 'note', 'active', 'updated_at'
+  @configure 'Role', 'name', 'permission_ids', 'group_ids', 'default_at_signup', 'note', 'active', 'updated_at', 'admin?'
   @extend Spine.Model.Ajax
   @url: @apiPath + '/roles'
   @configure_attributes = [
@@ -7,7 +7,7 @@ class App.Role extends App.Model
     { name: 'permission_ids',     display: 'Permissions',       tag: 'permission', item_class: 'checkbox' },
     { name: 'default_at_signup',  display: 'Default at Signup', tag: 'boolean', default: false, translate: true },
     { name: 'note',               display: 'Note',              tag: 'textarea', note: 'Notes are visible to agents only, never to customers.', limit: 250, null: true },
-    { name: 'active',             display: 'Active',            tag: 'active',  default: true },
+    { name: 'active',             display: 'Active',            tag: 'active',  default: true, disabled: @admin? },
     { name: 'created_by_id',      display: 'Created by',        relation: 'User', readonly: 1 },
     { name: 'created_at',         display: 'Created',           tag: 'datetime', readonly: 1 },
     { name: 'updated_by_id',      display: 'Updated by',        relation: 'User', readonly: 1 },

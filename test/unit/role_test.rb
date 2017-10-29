@@ -29,7 +29,8 @@ class RoleTest < ActiveSupport::TestCase
       name: 'test.normal',
       note: 'normal test permission',
       preferences: {},
-    )
+    )      
+    permission_test_admin = Permission.find_by_name('admin')
 
     assert_raises(RuntimeError) do
       Role.create(
@@ -86,7 +87,27 @@ class RoleTest < ActiveSupport::TestCase
       updated_by_id: 1,
       created_by_id: 1
     )
+    admin = Role.create(
+      name: 'admin2',
+      note: 'admin Role.',
+      permissions: [permission_test_admin],
+      updated_by_id: 1,
+      created_by_id: 1
+    )
+    admin_and_customer = Role.create(
+      name: 'admin_customer',
+      note: 'admin_customer Role.',
+      permissions: [permission_test_admin, permission_test_customer],
+      updated_by_id: 1,
+      created_by_id: 1
+    )    
 
+    assert(admin.admin?)
+    assert(!role11.admin?)
+    assert(!role13.admin?)
+    assert(!role12.admin?)
+    assert(!role14.admin?)
+    assert(admin_and_customer.admin?)
   end
 
   test 'permission default' do

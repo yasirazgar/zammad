@@ -133,6 +133,10 @@ returns
     false
   end
 
+  def admin?
+    self.with_permission?('admin')
+  end
+
   private_class_method
 
   def self.permission_ids_by_name(keys)
